@@ -1,0 +1,12 @@
+import {strict as a} from 'node:assert';
+import {insideFigure,detectFigures} from '../public/reader/figures.js';
+const fig={x:.1,y:.1,w:.8,h:.3};
+a.equal(insideFigure({text:'Graph label',rects:[{x:.2,y:.2,w:.1,h:.02}]},fig),true);
+a.equal(insideFigure({text:'Figure 1: Caption',rects:[{x:.2,y:.2,w:.1,h:.02}]},fig),false);
+a.equal(insideFigure({text:'Outside paragraph',rects:[{x:.2,y:.7,w:.5,h:.02}]},fig),false);
+const OPS={save:1,restore:2,transform:3,constructPath:4,paintImageXObject:5,paintInlineImageXObject:6,paintImageMaskXObject:7,paintImageXObjectRepeat:8,paintFormXObjectBegin:9,paintFormXObjectEnd:10};
+const vp={width:100,height:100,transform:[1,0,0,-1,0,100]};
+const raster=detectFigures({fnArray:[1,3,5,2],argsArray:[[],[60,0,0,30,10,50],['image'],[]]},OPS,vp,[]);
+a.equal(raster.length,1);a.ok(raster[0].w>0&&raster[0].h>0&&raster[0].x>=0&&raster[0].y>=0);
+const boxedTable=detectFigures({fnArray:[4,4,4],argsArray:Array.from({length:3},()=>[23,[],[10,20,80,60]])},OPS,vp,[]);a.equal(boxedTable.length,0);
+console.log('Figure checks passed: caption retained, labels excluded, raster bounds valid, uncaptioned table paths ignored');

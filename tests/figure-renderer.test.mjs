@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {regionPlan} from '../public/reader/figure-renderer.js';
+const base={width:612,height:792},box={x:.1,y:.2,w:.8,h:.4};
+const plan=regionPlan(base,box,4200);
+assert.equal(plan.width,4200);
+assert.ok(Math.abs(plan.width/plan.height-(base.width*box.w)/(base.height*box.h))<.002);
+assert.equal(plan.offsetX,box.x*base.width*plan.scale);
+const tall=regionPlan(base,{x:0,y:0,w:.01,h:1},4200);
+assert.ok(tall.height<=6000&&tall.width*tall.height<=16000000);
+assert.throws(()=>regionPlan(base,{x:0,y:0,w:0,h:1},4200));
+console.log('High resolution region geometry and memory limits passed');
