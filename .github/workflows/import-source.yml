@@ -1,0 +1,40 @@
+name: Import verified source snapshot
+on:
+  push:
+    paths: ['.github/workflows/import-source.yml']
+permissions:
+  contents: write
+jobs:
+  import:
+    if: github.event.head_commit.message != 'Remove one-time source import workflow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify and unpack source
+        run: |
+          python3 - <<'PY'
+          import hashlib, pathlib, zipfile, subprocess
+          archive = pathlib.Path('paper-reader-source.zip')
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == '71745717d66898f7b74c919784f1c866ca897f1df0976dbde79f6678603d8b4b'
+          with zipfile.ZipFile(archive) as z:
+              files = [i for i in z.infolist() if not i.is_dir()]
+              assert len(files) == 339
+              for i in files:
+                  p = pathlib.Path(i.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and p.parts[0] not in ('.git', '.github')
+                  z.extract(i)
+                  p.chmod((i.external_attr >> 16) & 0o777 or 0o644)
+              subprocess.run(['git', 'add', '-f', '--'] + [i.filename for i in files], check=True)
+          PY
+      - name: Check reader contracts
+        run: |
+          node --check public/reader/app.js
+          node --test tests/*.test.mjs
+      - name: Commit full source to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm paper-reader-source.zip
+          git commit -m "Import complete paper reader source (Sites 53e8d50)"
+          git push origin HEAD:main
